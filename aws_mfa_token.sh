@@ -11,17 +11,18 @@ SESSION_OUTPUT=$(aws sts get-session-token \
   --serial-number $MFA_DEVICE_ARN \
   --token-code $MFA_CODE \
   --region us-east-1 \
-  --duration-seconds 3600)
+  --duration-seconds 7200) # Adjust duration as needed
 
-# Extract credentials using jq
-AWS_ACCESS_KEY_ID=$(echo $SESSION_OUTPUT | jq -r '.Credentials.AccessKeyId')
-AWS_SECRET_ACCESS_KEY=$(echo $SESSION_OUTPUT | jq -r '.Credentials.SecretAccessKey')
-AWS_SESSION_TOKEN=$(echo $SESSION_OUTPUT | jq -r '.Credentials.SessionToken')
+# Extract creds
+AWS_ACCESS_KEY_ID=$(echo $SESSION_OUTPUT | grep -o '"AccessKeyId":[^,]*' | awk -F'"' '{print $4}')
+AWS_SECRET_ACCESS_KEY=$(echo $SESSION_OUTPUT | grep -o '"SecretAccessKey":[^,]*' | awk -F'"' '{print $4}')
+AWS_SESSION_TOKEN=$(echo $SESSION_OUTPUT | grep -o '"SessionToken":[^,]*' | awk -F'"' '{print $4}')
 
-# Update AWS CLI profile with session credentials
+# Update AWS CLI profile with creds
 aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID --profile $AWS_PROFILE
 aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY --profile $AWS_PROFILE
 aws configure set aws_session_token $AWS_SESSION_TOKEN --profile $AWS_PROFILE
 
+# Confirm update
 echo "AWS CLI profile '$AWS_PROFILE' updated with temporary credentials!"
-echo "Credentials valid for 1 hour. Use 'unset AWS_SESSION_TOKEN' to clear them."
+echo "Credentials valid for 2 hour. Use 'unset AWS_SESSION_TOKEN' to clear them."
